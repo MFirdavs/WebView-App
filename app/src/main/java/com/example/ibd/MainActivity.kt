@@ -3,28 +3,55 @@ package com.example.ibd
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
-@Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var connectivityManager: ConnectivityManager
+    private var isConnected: Boolean = false
 
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            isConnected = true
+        }
+
+        override fun onLost(network: Network) {
+            isConnected = false
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        connectivityManager =
+            getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        // Register network callback
+        val networkRequest = android.net.NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
 
         swipeRefreshLayout = findViewById(R.id.swipe_refresh)
 
@@ -42,21 +69,24 @@ class MainActivity : AppCompatActivity() {
 
             override fun onReceivedError(
                 view: WebView?,
-                errorCode: Int,
-                description: String?,
-                failingUrl: String?
+                request: WebResourceRequest?,
+                error: WebResourceError?
             ) {
-                swipeRefreshLayout.isRefreshing = false
-                Toast.makeText(
-                    this@MainActivity,
-                    "Error: $description",
-                    Toast.LENGTH_SHORT
-                ).show()
-                super.onReceivedError(view, errorCode, description, failingUrl)
+                // Only handle the main frame errors
+                if (request?.isForMainFrame == true) {
+                    swipeRefreshLayout.isRefreshing = false
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Error: ${error?.description}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                super.onReceivedError(view, request, error)
             }
         }
 
-        webView.loadUrl("https://ibd.hsiiv.uz")
+//        webView.loadUrl("https://ibd.hsiiv.uz")
+        webView.loadUrl("http://192.168.10.67:8080")
 
         swipeRefreshLayout.setOnRefreshListener {
             if (isNetworkAvailable()) {
@@ -71,7 +101,7 @@ class MainActivity : AppCompatActivity() {
         webSettings.allowContentAccess = true
         webSettings.allowFileAccess = true
         webSettings.mixedContentMode =
-            WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE // Changed for better security
 
         swipeRefreshLayout.setColorSchemeResources(
             R.color.blue_primary,
@@ -80,6 +110,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         setImmersiveMode()
+        setupOnBackPressed()
     }
 
     private fun setImmersiveMode() {
@@ -93,26 +124,28 @@ class MainActivity : AppCompatActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
-            setImmersiveMode()
-        }
+    private fun setupOnBackPressed() {
+        // Add a callback for handling back presses
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (webView.canGoBack()) {
+                    webView.goBack()
+                } else {
+                    // If the WebView can't go back, delegate the back press to the system
+                    // This will either close the app or navigate to the previous activity
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
     }
 
-    override fun onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
-    }
-
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun isNetworkAvailable(): Boolean {
-        val connectivityManager =
-            getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkInfo: NetworkInfo? = connectivityManager.activeNetworkInfo
-        return networkInfo != null && networkInfo.isConnected
+        val activeNetwork: Network? = connectivityManager.activeNetwork
+        val networkCapabilities: NetworkCapabilities? =
+            connectivityManager.getNetworkCapabilities(activeNetwork)
+        return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
     }
 
     override fun onResume() {
@@ -128,5 +161,10 @@ class MainActivity : AppCompatActivity() {
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         webView.restoreState(savedInstanceState)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        connectivityManager.unregisterNetworkCallback(networkCallback)
     }
 }
