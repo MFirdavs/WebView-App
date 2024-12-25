@@ -72,7 +72,6 @@ class MainActivity : AppCompatActivity() {
                 request: WebResourceRequest?,
                 error: WebResourceError?
             ) {
-                // Only handle the main frame errors
                 if (request?.isForMainFrame == true) {
                     swipeRefreshLayout.isRefreshing = false
                     Toast.makeText(
@@ -100,7 +99,7 @@ class MainActivity : AppCompatActivity() {
         webSettings.allowContentAccess = true
         webSettings.allowFileAccess = true
         webSettings.mixedContentMode =
-            WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE // Changed for better security
+            WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
 
         swipeRefreshLayout.setColorSchemeResources(
             R.color.blue_primary,
@@ -130,8 +129,6 @@ class MainActivity : AppCompatActivity() {
                 if (webView.canGoBack()) {
                     webView.goBack()
                 } else {
-                    // If the WebView can't go back, delegate the back press to the system
-                    // This will either close the app or navigate to the previous activity
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                 }
