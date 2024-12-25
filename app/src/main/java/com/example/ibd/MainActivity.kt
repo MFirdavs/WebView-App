@@ -54,8 +54,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-//        webView.loadUrl("https://ibd.hsiiv.uz")
-        webView.loadUrl("http://192.168.10.67:8080")
+        webView.loadUrl("https://ibd.hsiiv.uz")
 
         swipeRefreshLayout.setOnRefreshListener {
             if (isNetworkAvailable()) {
