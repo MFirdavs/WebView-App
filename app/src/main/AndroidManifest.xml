@@ -15,15 +15,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.IBD"
         android:usesCleartextTraffic="true"
-        tools:targetApi="31">
-        <activity android:name=".MainActivity"
-            android:screenOrientation="landscape"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-    </application>
+    tools:targetApi="31">
+    <activity android:name=".MainActivity"
+        android:screenOrientation="landscape"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
+        </intent-filter>
+    </activity>
+</application>
 
-</manifest>
+    </manifest>

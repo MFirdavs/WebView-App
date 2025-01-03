@@ -4,17 +4,30 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <RelativeLayout
-        android:id="@+id/root_layout"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#000">
+        android:layout_height="match_parent">
 
-        <WebView
-            android:id="@+id/webview"
+        <!-- WebView Container -->
+        <RelativeLayout
+            android:id="@+id/root_layout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:background="#000">
 
-    </RelativeLayout>
+            <WebView
+                android:id="@+id/webview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </RelativeLayout>
+
+        <!-- Error Layout Overlay -->
+        <include
+            android:id="@+id/error_layout"
+            layout="@layout/layout_error"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
 </com.example.ibd.CustomSwipeRefreshLayout>

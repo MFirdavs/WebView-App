@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">IBD</string>
+    <string name="error_image_description">Error Image</string>
+    <string name="error_message">Tarmoqga ulanib bo\'lmadi</string>
+    <string name="retry">Qayta urinib ko\'rish</string>
+    <string name="no_internet_connection">No internet connection</string>
+    <string name="still_no_connection">Hali ham tarmoqga ulanmagan</string>
+    <string name="no_vpn_connection">VPN connection required. Please connect to VPN and try again.</string>
 </resources>
