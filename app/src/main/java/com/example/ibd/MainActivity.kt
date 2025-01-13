@@ -200,6 +200,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+
         swipeRefreshLayout.setColorSchemeResources(
             R.color.blue_primary,
             R.color.teal_700,
@@ -208,6 +209,89 @@ class MainActivity : AppCompatActivity() {
 
         setImmersiveMode()
         setupOnBackPressed()
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                if (isNetworkAvailable()) {
+                    swipeRefreshLayout.isRefreshing = true
+                    hasError = false
+                    startTimeout()
+                } else {
+                    // Prevent WebView from loading if there's no network
+                    view?.stopLoading()
+                    showErrorLayout(getString(R.string.no_internet_connection))
+                    swipeRefreshLayout.isRefreshing = false
+                }
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                swipeRefreshLayout.isRefreshing = false
+                cancelTimeout()
+                if (!hasError) {
+                    hideErrorLayout()
+                }
+                super.onPageFinished(view, url)
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                if (request?.isForMainFrame == true) {
+                    hasError = true
+                    view?.stopLoading()  // Stop the WebView from loading
+                    swipeRefreshLayout.isRefreshing = false
+                    showErrorLayout(getString(R.string.error_message))
+
+                    // Clear the WebView to prevent default error page
+                    view?.loadUrl("about:blank")
+                }
+            }
+
+            // Override shouldOverrideUrlLoading to handle navigation
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): Boolean {
+                if (!isNetworkAvailable()) {
+                    showErrorLayout(getString(R.string.no_internet_connection))
+                    return true // Prevent loading
+                }
+                return false // Allow WebView to handle the URL
+            }
+        }
+
+        // Modify retry button click listener
+        retryButton.setOnClickListener {
+            if (isNetworkAvailable()) {
+                hideErrorLayout()
+                swipeRefreshLayout.isRefreshing = true
+                // Clear WebView before reloading
+                webView.loadUrl("about:blank")
+                Handler(Looper.getMainLooper()).postDelayed({
+                    webView.loadUrl("http://192.168.10.67:8080") // Your URL here
+                }, 100)
+            } else {
+                Toast.makeText(this, getString(R.string.no_internet_connection), Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Modify SwipeRefreshLayout listener
+        swipeRefreshLayout.setOnRefreshListener {
+            if (isNetworkAvailable()) {
+                hideErrorLayout()
+                // Clear WebView before reloading
+                webView.loadUrl("about:blank")
+                Handler(Looper.getMainLooper()).postDelayed({
+                    webView.loadUrl("http://192.168.10.67:8080") // Your URL here
+                }, 100)
+            } else {
+                swipeRefreshLayout.isRefreshing = false
+                showErrorLayout(getString(R.string.no_internet_connection))
+            }
+        }
     }
 
     private fun startTimeout() {
