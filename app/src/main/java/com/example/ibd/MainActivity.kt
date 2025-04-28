@@ -2,10 +2,12 @@ package com.example.ibd
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.net.Uri
 import android.net.http.SslError
 import android.os.Build
 import android.os.Bundle
@@ -18,6 +20,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
@@ -66,6 +70,9 @@ class MainActivity : AppCompatActivity() {
     private var timeoutHandler: Handler? = null
     private val TIMEOUT = 10000L // 10 seconds in milliseconds
     private val TAG = "MainActivity"
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private lateinit var fileChooserLauncher: ActivityResultLauncher<Intent>
+
 
     @RequiresApi(Build.VERSION_CODES.M)
     @SuppressLint("SetJavaScriptEnabled")
@@ -81,6 +88,19 @@ class MainActivity : AppCompatActivity() {
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+
+        fileChooserLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (filePathCallback == null) return@registerForActivityResult
+
+            val results: Array<Uri>? = if (result.resultCode == RESULT_OK) {
+                result.data?.data?.let { arrayOf(it) }
+            } else {
+                null
+            }
+
+            filePathCallback?.onReceiveValue(results)
+            filePathCallback = null
+        }
 
         // Initialize SwipeRefreshLayout
         swipeRefreshLayout = findViewById(R.id.swipe_refresh)
@@ -206,9 +226,31 @@ class MainActivity : AppCompatActivity() {
             R.color.purple_200
         )
 
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>,
+                fileChooserParams: FileChooserParams
+            ): Boolean {
+                this@MainActivity.filePathCallback?.onReceiveValue(null) // cancel previous
+                this@MainActivity.filePathCallback = filePathCallback
+
+                val intent = fileChooserParams.createIntent()
+                try {
+                    fileChooserLauncher.launch(intent) // modern way
+                } catch (e: Exception) {
+                    this@MainActivity.filePathCallback = null
+                    Toast.makeText(this@MainActivity, "Cannot open file chooser", Toast.LENGTH_SHORT).show()
+                    return false
+                }
+                return true
+            }
+        }
+
         setImmersiveMode()
         setupOnBackPressed()
     }
+
 
     private fun startTimeout() {
         cancelTimeout() // Ensure no previous timeout is running
