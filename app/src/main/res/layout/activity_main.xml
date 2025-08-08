@@ -9,18 +9,30 @@
         android:layout_height="match_parent">
 
         <!-- WebView Container -->
-        <RelativeLayout
-            android:id="@+id/root_layout"
+<!--        <RelativeLayout-->
+<!--            android:id="@+id/root_layout"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:background="#000">-->
+
+<!--            <WebView-->
+<!--                android:id="@+id/webview"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="match_parent" />-->
+
+<!--        </RelativeLayout>-->
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#000">
+            android:orientation="vertical">
 
             <WebView
                 android:id="@+id/webview"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-        </RelativeLayout>
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+        </LinearLayout>
 
         <!-- Error Layout Overlay -->
         <include

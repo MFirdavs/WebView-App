@@ -14,7 +14,15 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.webkit.*
+import android.webkit.SslErrorHandler
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
@@ -116,6 +124,19 @@ class MainActivity : AppCompatActivity() {
         webSettings.allowFileAccess = true
         webSettings.mixedContentMode =
             WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+
+        webView.setWebViewClient(object : WebViewClient() {
+            public override fun onPageFinished(view: WebView, url: String?) {
+                view.evaluateJavascript(
+                    "(function() {" +
+                            "document.body.style.overflow = 'auto';" +
+                            "document.documentElement.style.overflow = 'auto';" +
+                            "document.body.style.height = 'auto';" +
+                            "document.documentElement.style.height = 'auto';" +
+                            "})()", null
+                )
+            }
+        })
 
         // Initialize Error Layout
         errorLayout = findViewById(R.id.error_layout)
@@ -248,6 +269,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setImmersiveMode()
+        listenForKeyboardChanges()
         setupOnBackPressed()
     }
 
@@ -301,6 +323,32 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
+
+    private fun listenForKeyboardChanges() {
+        val contentView = findViewById<View>(android.R.id.content)
+        contentView.viewTreeObserver.addOnGlobalLayoutListener {
+            val rect = android.graphics.Rect()
+            contentView.getWindowVisibleDisplayFrame(rect)
+
+            val screenHeight = contentView.rootView.height
+            val keypadHeight = screenHeight - rect.bottom
+
+            if (keypadHeight > screenHeight * 0.15) {
+                // Keyboard is visible
+                disableImmersiveMode()
+            } else {
+                // Keyboard is hidden
+                setImmersiveMode()
+            }
+        }
+    }
+
+    private fun disableImmersiveMode() {
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.show(WindowInsetsCompat.Type.systemBars())
+    }
+
 
     @RequiresApi(Build.VERSION_CODES.M)
     private fun isNetworkAvailable(): Boolean {
